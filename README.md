@@ -1,7 +1,7 @@
 # Mini PNG Editor 🖼️
 
-A lightweight, powerful desktop application for image processing, focusing on pixel-perfect cropping, scaling, and AI-powered background removal.
-一個輕量且強大的圖片處理桌面程式，專注於精確裁切、縮放以及 AI 自動去背功能。
+A desktop application with a lightweight core for pixel-perfect cropping and scaling, plus an optional (and more resource-intensive) AI-powered background removal feature.
+一個核心輕量的圖片處理桌面程式，專注於精確裁切與縮放，並提供可選的 AI 自動去背功能（後者需要依賴較大的模型與套件）。
 
 <img width="1194" height="825" alt="image" src="https://github.com/user-attachments/assets/2d9f2429-d73c-493a-b71e-aee1d817cac3" />
 
@@ -18,13 +18,54 @@ A lightweight, powerful desktop application for image processing, focusing on pi
 
 ## 🚀 Installation / 安裝說明
 
-Ensure you have Python installed, then run: (請確保已安裝 Python，並執行以下指令：)
+Ensure you have Python installed, then choose **ONE** of the following installation methods based on your hardware:
+(請確保已安裝 Python，然後根據您的硬體狀況選擇**其中一種**安裝方式：)
 
+**Option A: Standard / CPU-Only (標準版 / 純 CPU)**
+Recommended for most users or computers without NVIDIA GPUs. 
+(推薦多數使用者或無 NVIDIA 顯卡的電腦使用。)
 ```bash
 pip install pillow rembg onnxruntime windnd
 ```
 
-*Note: If you have an NVIDIA GPU, installing `onnxruntime-gpu` instead of `onnxruntime` will significantly speed up the AI background removal. (註：如果您有 NVIDIA 顯示卡，安裝 `onnxruntime-gpu` 取代 `onnxruntime` 將能大幅提升 AI 去背的速度。)*
+**Option B: NVIDIA GPU Accelerated (NVIDIA 顯示卡加速版)**
+For users with NVIDIA GPUs (e.g., RTX 30/40 series) for significantly faster AI background removal. Please be aware of potential DLL dependency issues (see GPU Acceleration section below). 
+(擁有 NVIDIA 顯示卡的使用者可大幅提升 AI 去背速度，但請注意可能會遇到 DLL 相依性的問題，詳見下方 GPU 加速說明。)
+```bash
+pip install pillow rembg onnxruntime-gpu windnd
+```
+*Note: Make sure to `pip uninstall onnxruntime` if you previously installed the CPU version.* 
+*(註：如果之前曾安裝過 CPU 版的套件，請先將其解除安裝，避免衝突。)*
+
+## 🎮 GPU Acceleration (Advanced) / GPU 加速 (進階說明)
+
+To leverage NVIDIA GPU performance (e.g., RTX 4080/4090), follow these version-specific steps:
+若要發揮 NVIDIA 顯示卡（例如 RTX 4080/4090）的高效能，請遵循以下特定版本要求：
+
+**🔍 Why are these steps necessary? (為什麼需要這些繁瑣步驟？)**
+The AI background removal uses `rembg`, which relies on the `onnxruntime-gpu` Python package as its core engine. This specific package (for example, what `pip` installed for my environment was version **1.24.3**) has strict, hardcoded dependencies for CUDA 12 and expects DLLs in standard paths, which causes version conflicts and path mismatch issues if not configured correctly.
+(AI 去背的核心引擎是 Python 套件 `onnxruntime-gpu`。然而，該套件（例如我透過 pip 安裝的版本為 **1.24.3**）在底層寫死了對 **CUDA 12** 的依賴，且預設只會在系統內建的標準路徑尋找 DLL 檔案。這正是導致各種版本不相容以及找不到 cuDNN 錯誤的罪魁禍首。)
+
+1. **CUDA Toolkit 12.x**: `onnxruntime-gpu` currently requires **CUDA 12** (e.g., v12.4, v12.8, v12.9). **CUDA 13 is currently NOT supported.**
+   (目前 `onnxruntime-gpu` 僅支援 **CUDA 12** 版本系列。請勿安裝最新的 CUDA 13，否則會找不到對應的 DLL。)
+2. **cuDNN 9.x**: You must also install **cuDNN 9**.
+   - **Important Note**: cuDNN 9 installs its DLLs in a deep, version-specific subfolder (e.g., `...\CUDNN\v9.x\bin\12.x\x64\`). By default, Python packages like `onnxruntime-gpu` will **fail** to find these because they only search standard PATH locations.
+   - (除了 CUDA 外，您還必須安裝 **cuDNN 9**。)
+   - (**重要注意**：cuDNN 9 的安裝路徑非常深且帶有版本號，例如 `...\CUDNN\v9.x\bin\12.x\x64\`，而 Python 的 AI 套件預設只會在標準路徑搜尋，這會導致即便安裝了也依然出現「找不到 DLL」的錯誤。)
+3. **Portable DLL Support (`lib/`) / 解決方案**:
+   - To solve the path mismatch and avoid polluting your system PATH, you can create a `lib/` folder in the project directory.
+   - Copy the required DLLs from that deep cuDNN bin folder into this local `lib/` folder. The folder should contain at least:
+     - `cudnn64_9.dll`
+     - `cudnn_cnn64_9.dll`
+     - `cudnn_engines_precompiled64_9.dll`
+     - `cudnn_engines_runtime_compiled64_9.dll`
+     - `cudnn_graph64_9.dll`
+     - `cudnn_heuristic64_9.dll`
+     - `cudnn_ops64_9.dll`
+   - The application will automatically detect and load these DLLs on startup.
+   - (為了徹底解決路徑不匹配的問題，並避免污染系統環境變數，建議在專案目錄下建立 `lib/` 資料夾，並將上述深層目錄內需要的 DLL 檔案複製進去。該資料夾應至少包含上述 7 個 DLL 檔案，確保驅動 AI 引擎所需的所有元件都已備齊。程式啟動時會自動讀取該目錄，確保 100% 成功驅動 GPU。)
+
+
 
 ## ⚙️ Configuration / 設定 (Settings.py)
 The project includes a `settings.py` file that acts like a C-style macro system:

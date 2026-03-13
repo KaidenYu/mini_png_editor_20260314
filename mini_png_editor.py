@@ -1,8 +1,29 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk
 import os
+import sys
+import tkinter as tk
+from tkinter import filedialog, messagebox, colorchooser, ttk
+from PIL import Image, ImageTk, ImageDraw
+import threading
 from typing import Optional, Any
+
+# --- DLL Loading for AI (Windows) ---
+# Tell Python to also look for DLLs in our local 'lib' directory
+if sys.platform == "win32":
+    # Get the directory where this script is located
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    lib_path = os.path.join(current_dir, "lib")
+    
+    if os.path.exists(lib_path):
+        try:
+            # os.add_dll_directory is highly recommended for Python 3.8+ on Windows
+            if hasattr(os, "add_dll_directory"):
+                os.add_dll_directory(lib_path)
+            
+            # Add to PATH as well to ensure all loading mechanisms see it
+            os.environ["PATH"] = lib_path + os.pathsep + os.environ["PATH"]
+            print(f"DEBUG: Added local lib to DLL path: {lib_path}")
+        except Exception as e:
+            print(f"Warning: Could not add local lib directory: {e}")
 
 # --- Settings & Conditional Imports ---
 import settings
