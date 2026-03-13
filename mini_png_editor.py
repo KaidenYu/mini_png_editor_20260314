@@ -293,7 +293,12 @@ class PngCropperApp:
         self.tk_image = ImageTk.PhotoImage(view_img)
         
         self.canvas.delete("img")
+        self.canvas.delete("img_border")
         self.canvas.create_image(0, 0, anchor=tk.NW, image=self.tk_image, tags="img")
+        
+        # Draw a thin border around the image to show boundaries (especially for transparent images)
+        self.canvas.create_rectangle(0, 0, vw, vh, outline="#888888", width=1, tags="img_border")
+        
         self.canvas.config(scrollregion=(0, 0, vw, vh))
         
         # Update UI
