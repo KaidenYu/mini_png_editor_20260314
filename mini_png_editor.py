@@ -59,6 +59,8 @@ class PngCropperApp:
         self.rect_y = tk.IntVar(value=20)
         self.rect_width = tk.IntVar(value=100)
         self.rect_height = tk.IntVar(value=100)
+        self.cross_h_id: Optional[int] = None
+        self.cross_v_id: Optional[int] = None
         
         # --- Display & Scaling ---
         self.scaling_x = 1.0       # Real image width factor
@@ -78,6 +80,7 @@ class PngCropperApp:
         self.drag_last_x = 0.0
         self.drag_last_y = 0.0
         self.is_full = tk.BooleanVar(value=False)
+        self.show_crosshair = tk.BooleanVar(value=False)
 
         self.setup_ui()
         
@@ -109,6 +112,9 @@ class PngCropperApp:
 
         self.crop_input_container = tk.Frame(crop_group)
         self.crop_input_container.pack(side=tk.LEFT)
+
+        self.check_crosshair = tk.Checkbutton(self.crop_input_container, text="Crosshair", variable=self.show_crosshair, command=self.sync_rect_from_vars)
+        self.check_crosshair.pack(side=tk.LEFT, padx=(0, 5))
 
         for label_text, var in [("X:", self.rect_x), ("Y:", self.rect_y), 
                                 ("W:", self.rect_width), ("H:", self.rect_height)]:
@@ -396,12 +402,15 @@ class PngCropperApp:
     def sync_rect_from_vars(self):
         if not self.canvas or not self.original_image: return
         
+        # Helper to hide everything if needed
+        def hide_all_crop_ui():
+            if self.rect_id: self.canvas.itemconfigure(self.rect_id, state='hidden')
+            if self.cross_h_id: self.canvas.itemconfigure(self.cross_h_id, state='hidden')
+            if self.cross_v_id: self.canvas.itemconfigure(self.cross_v_id, state='hidden')
+
         if self.is_full.get():
-            if self.rect_id:
-                self.canvas.itemconfigure(self.rect_id, state='hidden')
+            hide_all_crop_ui()
             return
-        elif self.rect_id:
-            self.canvas.itemconfigure(self.rect_id, state='normal')
 
         try:
             # The vars (x, y, w, h) now represent pixels on the SCALED image.
@@ -412,12 +421,37 @@ class PngCropperApp:
             
             if self.rect_id:
                 self.canvas.coords(self.rect_id, vx1, vy1, vx2, vy2)
+                self.canvas.itemconfigure(self.rect_id, state='normal')
                 self.canvas.tag_raise(self.rect_id)
             else:
                 self.rect_id = self.canvas.create_rectangle(
                     vx1, vy1, vx2, vy2, 
                     outline="red", width=2, dash=(4, 4)
                 )
+
+            # --- Crosshair Logic ---
+            if self.show_crosshair.get():
+                mid_x = (vx1 + vx2) / 2
+                mid_y = (vy1 + vy2) / 2
+                
+                if self.cross_h_id:
+                    self.canvas.coords(self.cross_h_id, vx1, mid_y, vx2, mid_y)
+                    self.canvas.itemconfigure(self.cross_h_id, state='normal')
+                else:
+                    self.cross_h_id = self.canvas.create_line(vx1, mid_y, vx2, mid_y, fill="red", dash=(2, 2))
+                
+                if self.cross_v_id:
+                    self.canvas.coords(self.cross_v_id, mid_x, vy1, mid_x, vy2)
+                    self.canvas.itemconfigure(self.cross_v_id, state='normal')
+                else:
+                    self.cross_v_id = self.canvas.create_line(mid_x, vy1, mid_x, vy2, fill="red", dash=(2, 2))
+                
+                self.canvas.tag_raise(self.cross_h_id)
+                self.canvas.tag_raise(self.cross_v_id)
+            else:
+                if self.cross_h_id: self.canvas.itemconfigure(self.cross_h_id, state='hidden')
+                if self.cross_v_id: self.canvas.itemconfigure(self.cross_v_id, state='hidden')
+
         except: pass
 
     def update_vars_from_rect(self):
