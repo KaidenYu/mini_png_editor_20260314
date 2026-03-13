@@ -3,6 +3,8 @@
 A lightweight, powerful desktop application for image processing, focusing on pixel-perfect cropping, scaling, and AI-powered background removal.
 一個輕量且強大的圖片處理桌面程式，專注於精確裁切、縮放以及 AI 自動去背功能。
 
+<img width="1194" height="825" alt="image" src="https://github.com/user-attachments/assets/2d9f2429-d73c-493a-b71e-aee1d817cac3" />
+
 ---
 
 ## ✨ Key Features / 主要功能
@@ -42,4 +44,3 @@ The project includes a `settings.py` file that acts like a C-style macro system:
 5. Click **Save PNG** to export your work. (點擊 **Save PNG** 匯出作品。)
 
 ---
-Created by KaidenYu.
