@@ -4,7 +4,17 @@ from PIL import Image, ImageTk
 import os
 from typing import Optional, Any
 
-# Lightweight Windows Drag & Drop Support
+# --- Settings & Conditional Imports ---
+import settings
+
+HAS_REMBG = False
+if getattr(settings, "ENABLE_REMBG", False):
+    try:
+        from rembg import remove
+        HAS_REMBG = True
+    except ImportError:
+        HAS_REMBG = False
+
 try:
     import windnd
     HAS_WINDND = True
@@ -120,7 +130,17 @@ class PngCropperApp:
         tk.Button(zoom_group, text="+", command=self.zoom_in, width=2).pack(side=tk.LEFT)
         self.zoom_var.trace_add("write", lambda *a: self.on_zoom_input())
 
-        self.zoom_var.trace_add("write", lambda *a: self.on_zoom_input())
+        # --- Group 5: AI Tools (Optional) ---
+        if HAS_REMBG:
+            ai_group = tk.LabelFrame(self.toolbar, text=" AI Tools ", padx=10, pady=5)
+            ai_group.pack(side=tk.LEFT, padx=5)
+            self.btn_rembg = tk.Button(ai_group, text="Remove BG", command=self.process_remove_bg)
+            self.btn_rembg.pack(side=tk.LEFT)
+        elif getattr(settings, "ENABLE_REMBG", False):
+            # If enabled in settings but missing library
+            ai_group = tk.LabelFrame(self.toolbar, text=" AI Tools ", padx=10, pady=5)
+            ai_group.pack(side=tk.LEFT, padx=5)
+            tk.Label(ai_group, text="rembg not installed", fg="gray").pack()
 
         # 2. Status Bar (Bottom)
         status_msg = "Ready. Drag a PNG file here to start." if HAS_WINDND else "Ready. Use 'Open PNG' to load image."
@@ -593,6 +613,40 @@ class PngCropperApp:
             self.canvas.xview_scroll(int(-1 * (delta / 120)), "units")
         else:
             self.canvas.yview_scroll(int(-1 * (delta / 120)), "units")
+
+    def process_remove_bg(self):
+        if not self.original_image:
+            return
+        
+        # Disable button and show status
+        self.btn_rembg.config(state='disabled')
+        old_status = self.status_bar.cget("text")
+        self.status_bar.config(text="AI is removing background... Please wait (1-3 seconds).", fg="blue")
+        self.root.update_idletasks() # Force UI update
+
+        def run_ai():
+            try:
+                # Execute AI removal
+                # We work on original image to maintain quality
+                output = remove(self.original_image)
+                
+                # Update UI in main thread
+                self.root.after(0, lambda: self.on_ai_complete(output, old_status))
+            except Exception as e:
+                self.root.after(0, lambda: messagebox.showerror("AI Error", f"Background removal failed: {e}"))
+                self.root.after(0, lambda: self.btn_rembg.config(state='normal'))
+                self.root.after(0, lambda: self.status_bar.config(text=old_status, fg="black"))
+
+        import threading
+        threading.Thread(target=run_ai, daemon=True).start()
+
+    def on_ai_complete(self, new_image, old_status):
+        self.original_image = new_image
+        self.refresh_display()
+        self.btn_rembg.config(state='normal')
+        self.status_bar.config(text="Background removed successfully!", fg="green")
+        # Revert status color after 3 seconds
+        self.root.after(3000, lambda: self.status_bar.config(text=f"AI Result | {old_status}", fg="black"))
 
     # --- Action ---
 
