@@ -69,6 +69,48 @@ The AI background removal uses `rembg`, which relies on the `onnxruntime-gpu` Py
 
 
 
+## 🖥️ CLI Usage / 命令行使用方式
+The application supports a headless CLI mode for automation or integration with agents (e.g., as an MCP tool).
+本程式支援命令行模式，方便進行自動化處理或作為 AI Agent 的工具呼叫。
+
+### Arguments / 參數說明:
+**Common / 基礎參數:**
+- `--input`, `-i`: Input image path. (輸入圖片路徑，必填)
+
+**Information Query / 資訊查詢:**
+- `--info`: Print image details (W, H, Mode) as JSON and exit. (以 JSON 格式輸出圖片資訊並結束)
+  - *Note: If this is used, the app will **only** show information. Other parameters like --crop or --output will be skipped and a warning will be shown.*
+  - *(註：使用此參數時，程式「只」會顯示資訊。若有加裁切、存檔等其他參數，都會被跳過並顯示警告。)*
+
+**Image Processing / 圖片處理:**
+- `--output`, `-o`: Output image path. (輸出圖片路徑，處理模式下必填)
+- `--rembg`: (Optional) Enable AI background removal. (可選：啟用 AI 自動去背)
+- `--scale W H`: (Optional) Scale image. (可選：縮放圖片)
+  - `W`: Target width. (目標寬度)
+  - `H`: Target height. (目標高度)
+- `--crop X Y W H`: (Optional) Crop area. (可選：裁切區域)
+  - `X`, `Y`: Starting coordinates (top-left). (起始點座標，左上角)
+  - `W`, `H`: Crop width and height. (裁切後的寬度與高度)
+
+### Image Processing Order / 圖片處理執行順序:
+1. **AI Removal** (`--rembg`) -> 2. **Scaling** (`--scale`) -> 3. **Cropping** (`--crop`)
+*Note: This means `--crop` values are calculated based on the image size **after** scaling.*
+*(註：這表示 `--crop` 的座標與尺寸是基於縮放**之後**的圖片大小來計算的。)*
+
+### Example 1: Information Query / 範例 1：查詢圖片資訊
+Query metadata (W, H, Mode) as JSON - ideal for automation scripts.
+以 JSON 格式取得圖片元數據，適合用於自動化腳本。
+```bash
+python mini_png_editor.py --input test.png --info
+```
+
+### Example 2: Image Processing / 範例 2：圖片處理
+AI Background Removal + Scale to 800x600 + Crop 400x400 area starting from (200, 100).
+AI 自動去背 + 縮放至 800x600 + 從座標 (200, 100) 開始裁切出 400x400 區域。
+```bash
+python mini_png_editor.py --input test.png --output result.png --rembg --scale 800 600 --crop 200 100 400 400
+```
+
 ## ⚙️ Configuration / 設定 (Settings.py)
 The project includes a `settings.py` file that acts like a C-style macro system:
 專案包含一個 `settings.py` 檔案，運作方式類似 C 語言的 Macro 系統：

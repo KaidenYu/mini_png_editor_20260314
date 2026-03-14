@@ -4,6 +4,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, colorchooser, ttk
 from PIL import Image, ImageTk, ImageDraw
 import threading
+import argparse
+import json
 from typing import Optional, Any
 
 # --- DLL Loading for AI (Windows) ---
@@ -817,7 +819,86 @@ class PngCropperApp:
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to save: {e}")
 
+def main():
+    # If no arguments are provided, launch GUI
+    if len(sys.argv) == 1:
+        root = tk.Tk()
+        app = PngCropperApp(root)
+        root.mainloop()
+        return
+
+    # CLI Mode
+    parser = argparse.ArgumentParser(description="Mini PNG Editor - CLI Mode")
+    parser.add_argument("--input", "-i", required=True, help="Input image path")
+    parser.add_argument("--output", "-o", help="Output image path (required unless using --info)")
+    parser.add_argument("--info", action="store_true", help="Print image information as JSON and exit")
+    parser.add_argument("--rembg", action="store_true", help="Remove background using AI")
+    parser.add_argument("--crop", nargs=4, type=int, metavar=('X', 'Y', 'W', 'H'), help="Crop parameters: x y width height")
+    parser.add_argument("--scale", nargs=2, type=int, metavar=('W', 'H'), help="Scale image to: width height")
+
+    args = parser.parse_args()
+
+    try:
+        if not args.info and not args.output:
+            parser.error("--output is required unless --info is specified")
+
+        img = Image.open(args.input)
+
+        if args.info:
+            # Check if other processing arguments were provided to warn the user
+            ignored = []
+            if args.output: ignored.append("--output")
+            if args.rembg: ignored.append("--rembg")
+            if args.scale: ignored.append("--scale")
+            if args.crop: ignored.append("--crop")
+            
+            if ignored:
+                print(f"Warning: --info detected. The following arguments will be ignored: {', '.join(ignored)}", file=sys.stderr)
+
+            info = {
+                "width": img.width,
+                "height": img.height,
+                "mode": img.mode,
+                "filename": os.path.basename(args.input)
+            }
+            print(json.dumps(info, indent=2))
+            return
+
+        img = img.convert("RGBA")
+
+        # 1. AI Background Removal
+        if args.rembg:
+            if not HAS_REMBG:
+                print("Error: AI (rembg) is not enabled or installed. Check settings.py.")
+                sys.exit(1)
+            print("Running AI Background Removal...")
+            img = remove(img)
+
+        # 2. Image Scaling (Data Scale)
+        if args.scale:
+            sw, sh = args.scale
+            print(f"Scaling to {sw}x{sh}...")
+            img = img.resize((sw, sh), Image.Resampling.LANCZOS)
+
+        # 3. Cropping
+        if args.crop:
+            cx, cy, cw, ch = args.crop
+            print(f"Cropping Area: X={cx}, Y={cy}, W={cw}, H={ch}...")
+            left, top = max(0, cx), max(0, cy)
+            right, bottom = min(img.width, cx + cw), min(img.height, cy + ch)
+            
+            if right <= left or bottom <= top:
+                raise ValueError("Crop area is empty or invalid.")
+            
+            img = img.crop((left, top, right, bottom))
+
+        # 4. Save
+        img.save(args.output)
+        print(f"Successfully saved to: {args.output}")
+
+    except Exception as e:
+        print(f"Error during processing: {e}")
+        sys.exit(1)
+
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = PngCropperApp(root)
-    root.mainloop()
+    main()
