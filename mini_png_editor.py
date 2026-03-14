@@ -6,6 +6,8 @@ import threading
 from typing import Optional, Any
 from PIL import Image, ImageDraw
 
+import settings
+
 # These will be initialized only when needed
 tk = filedialog = messagebox = colorchooser = ttk = ImageTk = None
 remove = None
@@ -31,7 +33,7 @@ def init_ai_imports():
             HAS_REMBG = False
 
 def init_windnd():
-    global HAS_WINDND
+    global windnd, HAS_WINDND
     if HAS_WINDND: return
     try:
         import windnd
@@ -173,16 +175,16 @@ class PngCropperApp:
         self.zoom_var.trace_add("write", lambda *a: self.on_zoom_input())
 
         # --- Group 5: AI Tools (Optional) ---
-        if HAS_REMBG:
+        if getattr(settings, "ENABLE_REMBG", False):
             ai_group = tk.LabelFrame(self.toolbar, text=" AI Tools ", padx=10, pady=5)
             ai_group.pack(side=tk.LEFT, padx=5)
-            self.btn_rembg = tk.Button(ai_group, text="Remove BG", command=self.process_remove_bg)
-            self.btn_rembg.pack(side=tk.LEFT)
-        elif getattr(settings, "ENABLE_REMBG", False):
-            # If enabled in settings but missing library
-            ai_group = tk.LabelFrame(self.toolbar, text=" AI Tools ", padx=10, pady=5)
-            ai_group.pack(side=tk.LEFT, padx=5)
-            tk.Label(ai_group, text="rembg not installed", fg="gray").pack()
+            
+            import importlib.util
+            if importlib.util.find_spec("rembg") is not None:
+                self.btn_rembg = tk.Button(ai_group, text="Remove BG", command=self.process_remove_bg)
+                self.btn_rembg.pack(side=tk.LEFT)
+            else:
+                tk.Label(ai_group, text="rembg not installed", fg="gray").pack()
 
         # 2. Status Bar (Bottom)
         status_msg = "Ready. Drag a PNG file here to start." if HAS_WINDND else "Ready. Use 'Open PNG' to load image."
@@ -701,6 +703,11 @@ class PngCropperApp:
 
         def run_ai():
             try:
+                # Load AI imports dynamically here instead of at startup
+                init_ai_imports()
+                if remove is None:
+                    raise Exception("rembg library failed to load.")
+                
                 # Execute AI removal
                 # We work on original image to maintain quality
                 output = remove(self.original_image)
