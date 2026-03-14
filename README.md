@@ -18,11 +18,14 @@ A desktop application with a lightweight core for pixel-perfect cropping and sca
 - **Save Preview / 存檔預覽**: Verify your final image in a dynamic, centered preview window before saving. (存檔前自動彈出自適應預覽視窗，確保編輯成果符合預期)
 - **Feature Toggles / 功能開關**: Easily enable/disable heavy AI features via `settings.py`. (可透過 `settings.py` 輕鬆開啟或關閉負擔較重的 AI 功能)
 
-## 🤖 AI Automation (MCP) / AI 自動化功能
-This project includes a built-in MCP server, allowing AI assistants (like Antigravity) to perform image edits for you.
-本專案內建 MCP 伺服器，讓 AI 代理人（如 Antigravity）能直接為您執行圖片編輯任務。
-- **Find more details in the [mcp/ directory](./mcp/README.md).**
-- **更多詳細資訊請參閱 [mcp/ 目錄](./mcp/README.md)。**
+## 🤖 AI Automation & Skills / AI 自動化與技能
+This project is fully equipped for AI Agents (like Antigravity) to perform image edits autonomously.
+本專案已完全整合 AI 代理人（如 Antigravity）的自動化操作能力，能讓 AI 直接在背景為您執行圖片編輯任務。
+
+- **🔧 MCP Server**: A hyper-stable, headless server bridging AI with the processing engine. [Read more in `mcp/`](./mcp/README.md)
+  (**MCP 伺服器**: 極致穩定、防死鎖的背景通訊橋樑。[詳情請見 `mcp/` 目錄](./mcp/README.md))
+- **🧠 Skills**: Pre-packaged automation instructions for agents to easily understand and use the editor. [Read more in `skills/`](./skills/README.md)
+  (**技能庫**: 預先封裝好的自動化指令，讓代理人能無縫理解並使用編輯器功能。[詳情請見 `skills/` 目錄](./skills/README.md))
 
 ## 🚀 Installation / 安裝說明
 

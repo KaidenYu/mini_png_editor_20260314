@@ -1,51 +1,64 @@
 import os
 import sys
-import tkinter as tk
-from tkinter import filedialog, messagebox, colorchooser, ttk
-from PIL import Image, ImageTk, ImageDraw
-import threading
 import argparse
 import json
+import threading
 from typing import Optional, Any
+from PIL import Image, ImageDraw
 
-# --- DLL Loading for AI (Windows) ---
-# Tell Python to also look for DLLs in our local 'lib' directory
-if sys.platform == "win32":
-    # Get the directory where this script is located
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    lib_path = os.path.join(current_dir, "lib")
-    
-    if os.path.exists(lib_path):
-        try:
-            # os.add_dll_directory is highly recommended for Python 3.8+ on Windows
-            if hasattr(os, "add_dll_directory"):
-                os.add_dll_directory(lib_path)
-            
-            # Add to PATH as well to ensure all loading mechanisms see it
-            os.environ["PATH"] = lib_path + os.pathsep + os.environ["PATH"]
-            print(f"DEBUG: Added local lib to DLL path: {lib_path}")
-        except Exception as e:
-            print(f"Warning: Could not add local lib directory: {e}")
-
-# --- Settings & Conditional Imports ---
-import settings
-
+# These will be initialized only when needed
+tk = filedialog = messagebox = colorchooser = ttk = ImageTk = None
+remove = None
 HAS_REMBG = False
-if getattr(settings, "ENABLE_REMBG", False):
-    try:
-        from rembg import remove
-        HAS_REMBG = True
-    except ImportError:
-        HAS_REMBG = False
+HAS_WINDND = False
 
-try:
-    import windnd
-    HAS_WINDND = True
-except ImportError:
-    HAS_WINDND = False
+def init_gui_imports():
+    global tk, filedialog, messagebox, colorchooser, ttk, ImageTk
+    if tk is not None: return
+    import tkinter as tk
+    from tkinter import filedialog, messagebox, colorchooser, ttk
+    from PIL import ImageTk
+
+def init_ai_imports():
+    global remove, HAS_REMBG
+    if remove is not None: return
+    import settings
+    if getattr(settings, "ENABLE_REMBG", False):
+        try:
+            from rembg import remove
+            HAS_REMBG = True
+        except ImportError:
+            HAS_REMBG = False
+
+def init_windnd():
+    global HAS_WINDND
+    if HAS_WINDND: return
+    try:
+        import windnd
+        HAS_WINDND = True
+    except ImportError:
+        HAS_WINDND = False
+
+def init_dll_path():
+    # --- DLL Loading for AI (Windows) ---
+    if sys.platform == "win32":
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        lib_path = os.path.join(current_dir, "lib")
+        if os.path.exists(lib_path):
+            try:
+                if hasattr(os, "add_dll_directory"):
+                    os.add_dll_directory(lib_path)
+                os.environ["PATH"] = lib_path + os.pathsep + os.environ["PATH"]
+                # ABSOLUTELY NO PRINTING if in --info mode to avoid breaking MCP
+                if "--info" not in sys.argv and "--help" not in sys.argv:
+                    print(f"DEBUG: Added local lib to DLL path: {lib_path}")
+            except Exception:
+                pass
 
 class PngCropperApp:
-    def __init__(self, root: tk.Tk):
+    def __init__(self, root: Any):
+        init_gui_imports()
+        init_windnd()
         self.root = root
         self.root.title("PNG Image Cropper - 1:1 View")
         self.root.geometry("1000x800")
@@ -820,8 +833,10 @@ class PngCropperApp:
                 messagebox.showerror("Error", f"Failed to save: {e}")
 
 def main():
+    init_dll_path()
     # If no arguments are provided, launch GUI
     if len(sys.argv) == 1:
+        init_gui_imports()
         root = tk.Tk()
         app = PngCropperApp(root)
         root.mainloop()
@@ -829,6 +844,7 @@ def main():
 
     # CLI Mode
     parser = argparse.ArgumentParser(description="Mini PNG Editor - CLI Mode")
+    # ... (args definition remains the same)
     parser.add_argument("--input", "-i", required=True, help="Input image path")
     parser.add_argument("--output", "-o", help="Output image path (required unless using --info)")
     parser.add_argument("--info", action="store_true", help="Print image information as JSON and exit")
@@ -845,16 +861,7 @@ def main():
         img = Image.open(args.input)
 
         if args.info:
-            # Check if other processing arguments were provided to warn the user
-            ignored = []
-            if args.output: ignored.append("--output")
-            if args.rembg: ignored.append("--rembg")
-            if args.scale: ignored.append("--scale")
-            if args.crop: ignored.append("--crop")
-            
-            if ignored:
-                print(f"Warning: --info detected. The following arguments will be ignored: {', '.join(ignored)}", file=sys.stderr)
-
+            # Check for silent processing here
             info = {
                 "width": img.width,
                 "height": img.height,
@@ -868,10 +875,11 @@ def main():
 
         # 1. AI Background Removal
         if args.rembg:
+            init_ai_imports()
             if not HAS_REMBG:
-                print("Error: AI (rembg) is not enabled or installed. Check settings.py.")
+                print("Error: AI (rembg) is not enabled or installed. Check settings.py.", file=sys.stderr)
                 sys.exit(1)
-            print("Running AI Background Removal...")
+            print("Running AI Background Removal...", file=sys.stderr)
             img = remove(img)
 
         # 2. Image Scaling (Data Scale)

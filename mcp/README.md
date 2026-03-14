@@ -1,71 +1,76 @@
 # Mini PNG Editor MCP Server 🛠️
 
-This directory contains the MCP (Model Context Protocol) server for the Mini PNG Editor. It allows AI agents to query image metadata and perform image processing tasks (background removal, scaling, cropping) directly.
-此目錄包含 Mini PNG Editor 的 MCP 伺服器實作，讓 AI Agent 可以直接查詢圖片元數據並執行圖片處理任務（去背、縮放、裁切）。
+This directory contains the MCP (Model Context Protocol) server for the Mini PNG Editor. It is the bridge that allows AI agents to directly query image metadata and seamlessly perform complex image processing tasks (like AI background removal, intelligent scaling, and precise cropping) in the background.
+(此目錄包含 Mini PNG Editor 的核心 MCP 伺服器實作，它是讓 AI Agent 可以直接查詢圖片元數據並無縫於背景執行複雜圖片處理任務（如 AI 去背、智慧縮放與精確裁切）的溝通橋樑。)
+
+---
+
+## 🚀 Key Architectural Optimizations / 核心架構優化
+
+This MCP server has been specifically engineered to be **hyper-stable** for autonomous agents working in complex Windows environments.
+(此 MCP 伺服器經過特別的工程設計，旨在讓自主代理人於複雜的 Windows 環境中達到**極致穩定**。)
+
+- **Zero Deadlocks (零死鎖防護)**: By explicitly redirecting child process data streams (`stdin=subprocess.DEVNULL`) and hiding console windows (`CREATE_NO_WINDOW`), this server eliminates the infamous JSON-RPC pipe deadlock that causes connection timeouts (EOF errors) during heavy subprocess tasks.
+  (透過強制將子進程資料流重定向以及隱藏控制台視窗，此伺服器徹底消除了在執行繁重子任務時，經常導致連線逾時或 EOF 錯誤的 JSON-RPC Pipe 死鎖問題。)
+- **Nano-Second Startup (極速啟動)**: Integration with the main script features lazy-loading of heavy AI and GUI dependencies, ensuring that lightweight queries (like `--info`) execute in milliseconds without bogging down the server.
+  (與主程式的整合採用了對重型 AI 與 GUI 套件的延遲載入技術，確保輕量級查詢（如 `--info`）能在毫秒內完成，絕不拖垮伺服器效能。)
+
+---
 
 ## 🚀 Getting Started / 快速入門
 
 ### 1. Prerequisites / 前置需求
 Ensure you have the MCP Python SDK installed:
-(請確保已安裝 MCP Python SDK：)
+(請確保您的 Python 環境已安裝 MCP 伺服器核心 SDK：)
 ```bash
 pip install mcp
 ```
 
 ### 2. Configuration / 設定範例
-To let your **AI agent (like Antigravity)** use these tools, add the following to your MCP configuration:
-(要讓您的 **AI agent (如 Antigravity)** 使用這些工具，請將以下內容加入您的 MCP 設定中：)
+To let your **AI agent (like Antigravity)** use these tools, register this server in your global MCP configuration file (e.g., `mcp_config.json`):
+(要讓您的 **AI agent (如 Antigravity)** 使用這些神級工具，請將本伺服器註冊至您全域的 MCP 設定檔中：)
 
 ```json
 {
   "mcpServers": {
     "mini-png-editor": {
-      "command": "python",
+      "command": "C:\\Path\\To\\Your\\Python\\Environment\\python.exe",
       "args": [
-        "D:/antigravity_workspace/mini_png_editor/mcp/mcp_server.py"
+        "D:\\Absolute\\Path\\To\\mini_png_editor\\mcp\\mcp_server.py"
       ]
     }
   }
 }
 ```
-*Note: Tested and verified with **Antigravity**. (Compatible with all MCP-enabled clients).*
-*(註：已在 **Antigravity** 上測試並驗證通過。同時也支援其他所有相容於 MCP 協定的工具。)*
-*Note: Use absolute paths for the script to ensure it can be found by the client.*
-*(註：建議使用絕對路徑以確保 Client 能正確讀取腳本。)*
+*💡 **Pro Tip / 專業建議**: It is highly recommended to use the absolute path to your specific `python.exe` instead of just `"python"` to prevent unexpected PATH environment mismatches.*
+*(強烈建議：請填寫您 Python 環境體的「絕對路徑」而非單純使用 `"python"`，以預防非預期的 PATH 環境變數錯亂。)*
 
-- **If you move the script (若改變目錄結構)**: If you decide to move `mcp_server.py` to a different location, simply open the file and manually update the `EDITOR_SCRIPT` variable with the new absolute path to `mini_png_editor.py`.
-- **(解決方案)**：若您搬移了 `mcp_server.py` 導致自動偵測失效，請直接編輯該檔案，將 `EDITOR_SCRIPT` 變數修改為 `mini_png_editor.py` 所在的新絕對路徑即可。
+### 3. Absolute Pathing / 路徑綁定
+- The `mcp_server.py` relies on an absolute path variable `EDITOR_SCRIPT` to locate the main logic script.
+- **If you move the project directory (若您移動了專案資料夾)**: Please open `mcp_server.py` and manually update the `EDITOR_SCRIPT` variable to point to the new absolute path of `mini_png_editor.py`.
+- **(解決方案)**：若您移動了整個專案資料夾導致伺服器找不到編輯器主程式，請直接編輯 `mcp_server.py`，將 `EDITOR_SCRIPT` 變數修改為 `mini_png_editor.py` 所在的新絕對路徑。
 
-  **Example (範例):**
-  ```python
-  # In mcp_server.py:
-  EDITOR_SCRIPT = r"C:\Path\To\Your\mini_png_editor.py"
-  ```
+---
 
-## 🖥️ Headless Operation / 背景執行說明
-The MCP server communicates via the **CLI mode** of the editor. This means:
-- **No GUI will appear** during processing.
-- Everything happens in the background for a seamless automated experience.
-
-此 MCP 伺服器是透過主程式的 **CLI (命令行) 模式** 進行連動，這意味著：
-- 執行過程中 **不會彈出圖形介面 (GUI)**。
-- 所有處理都在背景完成，提供流暢的自動化體驗。
-
-## 🛠️ Available Tools / 可用工具
+## 🛠️ Available Tools / 可用工具詳解
 
 ### `get_image_info`
-Queries an image's width, height, and mode. Returns a JSON string.
-(查詢圖片的寬度、高度與格式。以 JSON 字串格式回傳。)
-- `input_path`: Path to the image. (圖片路徑)
+Instantly queries an image's metadata without triggering heavy AI loads. Returns a JSON string.
+(瞬間查詢圖片的元數據，不會觸發繁重的 AI 載入程序。以 JSON 字串格式回傳。)
+- `input_path`: Absolute path to the source image. (原始圖片的絕對路徑)
 
 ### `process_image`
-Performs automated image processing.
-(執行自動化圖片處理。)
-- `input_path`: Source path. (來源路徑)
-- `output_path`: Destination path. (輸出路徑)
-- `rembg`: (bool) AI background removal. (是否啟用 AI 去背)
-- `scale_w/h`: (int) Target dimensions. (縮放目標寬高)
-- `crop_x/y/w/h`: (int) Crop parameters. (裁切座標與長寬)
+Performs automated, multi-step image processing natively.
+(原生執行自動化、多步驟的圖片處理流程。)
+- `input_path`: Source absolute path. (來源絕對路徑)
+- `output_path`: Destination absolute path. (輸出絕對路徑)
+- `rembg`: *(bool)* Enable AI background removal. (是否啟用 AI 自動去背)
+- `scale_w/h`: *(int)* Target dimensions for scaling. (縮放目標寬高)
+- `crop_x/y/w/h`: *(int)* Crop coordinates and dimensions. (裁切起始座標與長寬)
 
-**Processing Order / 執行順序說明:**
-AI Removal (去背) -> Scaling (縮放) -> Cropping (裁切)
+**⚙️ Processing Order / 執行順序說明:**
+1. AI Background Removal (去背) 
+2. Scaling (縮放) 
+3. Cropping (裁切)
+*Remember: Crop coordinates should be calculated based on the image size AFTER it has been scaled.*
+*(請注意：裁切的座標必須基於圖片「縮放完成後」的尺寸來計算。)*
