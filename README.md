@@ -3,7 +3,7 @@
 A desktop application with a lightweight core for pixel-perfect cropping and scaling, plus an optional (and more resource-intensive) AI-powered background removal feature.
 一個核心輕量的圖片處理桌面程式，專注於精確裁切與縮放，並提供可選的 AI 自動去背功能（後者需要依賴較大的模型與套件）。
 
-<img width="1194" height="825" alt="image" src="https://github.com/user-attachments/assets/2d9f2429-d73c-493a-b71e-aee1d817cac3" />
+<img width="1194" height="825" alt="image" src="https://i.meee.com.tw/8sGl9HJ.png" />
 
 ---
 
