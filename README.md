@@ -18,6 +18,12 @@ A desktop application with a lightweight core for pixel-perfect cropping and sca
 - **Save Preview / 存檔預覽**: Verify your final image in a dynamic, centered preview window before saving. (存檔前自動彈出自適應預覽視窗，確保編輯成果符合預期)
 - **Feature Toggles / 功能開關**: Easily enable/disable heavy AI features via `settings.py`. (可透過 `settings.py` 輕鬆開啟或關閉負擔較重的 AI 功能)
 
+## 🤖 AI Automation (MCP) / AI 自動化功能
+This project includes a built-in MCP server, allowing AI assistants (like Antigravity) to perform image edits for you.
+本專案內建 MCP 伺服器，讓 AI 代理人（如 Antigravity）能直接為您執行圖片編輯任務。
+- **Find more details in the [mcp/ directory](./mcp/README.md).**
+- **更多詳細資訊請參閱 [mcp/ 目錄](./mcp/README.md)。**
+
 ## 🚀 Installation / 安裝說明
 
 Ensure you have Python installed, then choose **ONE** of the following installation methods based on your hardware:
