@@ -14,6 +14,8 @@ A desktop application with a lightweight core for pixel-perfect cropping and sca
 - **Image Scaling / 圖片縮放**: Resize images with fixed or free aspect ratios. (支援固定比例或自由調整圖片尺寸)
 - **Visual Zoom / 視覺縮放**: Smooth zooming (Ctrl + Mouse Wheel) for detailed work. (支援 Ctrl + 滾輪平滑縮放，方便細節處理)
 - **Drag & Drop / 拖放支援**: Simply drop any PNG file into the app to start (Windows support). (支援將 PNG 檔案直接拖入程式視窗開啟)
+- **Crosshair Reference / 中心十字參考**: Toggleable crosshair to precisely align the center of your crop. (可開啟中心十字線，精確對齊裁切區域中心)
+- **Save Preview / 存檔預覽**: Verify your final image in a dynamic, centered preview window before saving. (存檔前自動彈出自適應預覽視窗，確保編輯成果符合預期)
 - **Feature Toggles / 功能開關**: Easily enable/disable heavy AI features via `settings.py`. (可透過 `settings.py` 輕鬆開啟或關閉負擔較重的 AI 功能)
 
 ## 🚀 Installation / 安裝說明

@@ -714,11 +714,9 @@ class PngCropperApp:
         if not self.scaled_image: return
         
         if self.is_full.get():
-            # Save the entire scaled image
             left, top = 0, 0
             right, bottom = self.scaled_image.width, self.scaled_image.height
         else:
-            # Use values relative to the SCALED image
             x, y = self.rect_x.get(), self.rect_y.get()
             w, h = self.rect_width.get(), self.rect_height.get()
             
@@ -729,12 +727,92 @@ class PngCropperApp:
             messagebox.showerror("Error", "Selected area is empty or invalid.")
             return
 
-        save_path = filedialog.asksaveasfilename(defaultextension=".png", filetypes=[("PNG files", "*.png")])
+        try:
+            cropped = self.scaled_image.crop((left, top, right, bottom))
+            self.show_save_preview(cropped)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to prepare preview: {e}")
+
+    def show_save_preview(self, cropped_image: Image.Image):
+        preview_win = tk.Toplevel(self.root)
+        preview_win.title("Save Preview - Verify your edit")
+        
+        # --- Dynamic Sizing & Centering ---
+        # Calculate ideal window size based on image aspect ratio
+        img_w, img_h = cropped_image.width, cropped_image.height
+        aspect = img_w / img_h
+        
+        # Target sizes
+        target_pw, target_ph = 800, 600 # Base size defaults
+        if aspect > 1.2: # Landscape
+            target_pw = 850
+            target_ph = int(850 / aspect) + 150 # +150 for header/footer
+        elif aspect < 0.8: # Portrait
+            target_ph = 700
+            target_pw = int((700 - 150) * aspect) + 40
+        
+        # Clamp to reasonable screen limits
+        pw = max(400, min(1000, target_pw))
+        ph = max(450, min(800, target_ph))
+
+        # Get parent window position to center
+        self.root.update_idletasks()
+        rx = self.root.winfo_rootx()
+        ry = self.root.winfo_rooty()
+        rw = self.root.winfo_width()
+        rh = self.root.winfo_height()
+        
+        # Calculate new X/Y to center over parent
+        px = rx + (rw // 2) - (pw // 2)
+        py = ry + (rh // 2) - (ph // 2)
+        
+        preview_win.geometry(f"{pw}x{ph}+{max(0, px)}+{max(0, py)}")
+        preview_win.transient(self.root)
+        preview_win.grab_set()
+
+        # UI Instructions
+        header = tk.Frame(preview_win, pady=10)
+        header.pack(side=tk.TOP, fill=tk.X)
+        tk.Label(header, text="Preview: Does this look correct?", font=("Arial", 12, "bold")).pack()
+        tk.Label(header, text=f"Resolution: {cropped_image.width} x {cropped_image.height} px", fg="gray").pack()
+
+        # Image Display Area (Fit to window)
+        container = tk.Frame(preview_win, bg="#333333")
+        container.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+
+        # Create a scaled-down copy for preview only (keep aspect ratio)
+        max_preview_w, max_preview_h = 760, 480
+        preview_copy = cropped_image.copy()
+        preview_copy.thumbnail((max_preview_w, max_preview_h), Image.Resampling.LANCZOS)
+        
+        self.preview_tk = ImageTk.PhotoImage(preview_copy)
+        # Center the preview image in the dark container
+        tk.Label(container, image=self.preview_tk, bg="#505050", relief=tk.RAISED).place(relx=0.5, rely=0.5, anchor=tk.CENTER)
+
+        # Bottom Buttons
+        footer = tk.Frame(preview_win, pady=15)
+        footer.pack(side=tk.BOTTOM, fill=tk.X)
+
+        btn_cancel = tk.Button(footer, text="Cancel / Re-Edit", command=preview_win.destroy, width=15)
+        btn_cancel.pack(side=tk.LEFT, padx=50)
+
+        def proceed_to_save():
+            preview_win.destroy()
+            self.execute_save(cropped_image)
+
+        btn_confirm = tk.Button(footer, text="Confirm & Save...", command=proceed_to_save, 
+                                bg="#4CAF50", fg="white", font=("Arial", 10, "bold"), width=15)
+        btn_confirm.pack(side=tk.RIGHT, padx=50)
+
+    def execute_save(self, image: Image.Image):
+        save_path = filedialog.asksaveasfilename(
+            defaultextension=".png", 
+            filetypes=[("PNG files", "*.png")],
+            initialfile="result.png"
+        )
         if save_path:
             try:
-                # Crop from scaled_image
-                cropped = self.scaled_image.crop((left, top, right, bottom))
-                cropped.save(save_path)
+                image.save(save_path)
                 messagebox.showinfo("Success", f"Saved to:\n{save_path}")
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to save: {e}")
